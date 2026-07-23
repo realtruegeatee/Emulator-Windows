@@ -3,39 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emulator-Windows</title>
+    <title>Emulator-Windows – Windows 10 Browser Demo</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+        /* ==== Global reset ==== */
+        *, *::before, *::after {box-sizing:border-box;margin:0;padding:0;}
+        html,body{height:100%;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#0078d7;color:#fff;overflow:hidden;}
+        body{display:flex;flex-direction:column;}
+
+        /* ==== Desktop background ==== */
+        #desktop{
+            flex:1;
+            position:relative;
+            background:url('https://raw.githubusercontent.com/microsoft/Windows-universal-samples/master/Samples/XamlDisplay/images/Items/grid.png') repeat;
+            overflow:hidden;
         }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+        #desktop .icon{
+            position:absolute;
+            width:64px;height:64px;
+            text-align:center;
+            cursor:move;
+            user-select:none;
+            top:20px;left:20px;
         }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
+        #desktop .icon img{width:48px;height:48px;margin-bottom:4px;}
+        #desktop .icon label{font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;width:64px;}
+
+        /* ==== Taskbar ==== */
+        #taskbar{
+            height:40px;
+            background:#0078d7;
+            display:flex;
+            align-items:center;
+            padding:0 10px;
+            color:#fff;
+            font-size:0.9rem;
         }
-        .header {
-            background: #2c3e50;
-            color: white;
-            padding: 30px;
-            text-align: center;
+        #taskbar .start-btn{
+            background:none;
+            border:none;
+            color:#fff;
+            font-weight:600;
+            cursor:pointer;
+            padding:0 8px;
         }
-        .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
+        #taskbar .start-btn:hover{background:rgba(255,255,255,0.2);border-radius:4px;}
+        #taskbar .search{flex:1;margin:0 12px;}
+        #taskbar .search input{width:100%;padding:4px 8px;border:none;border-radius:4px;font:inherit;}
+        #taskbar .tray{display:flex;gap:8px;align-items:center;}
+        #taskbar .tray .clock{font-variant-numeric:tabular-nums;}
+
+        /* ==== Modal windows ==== */
+        .modal{
+            position:absolute;
+            left:50%;top:50%;
+            transform:translate(-50%,-50%);
+            background:#fff;
+            color:#000;
+            border-radius:6px;
+            box-shadow:0 4px 20px rgba(0,0,0,.3);
+            min-width:260px;
+            max-width:80vw;
+            max-height:80vh;
+            display:flex;
+            flex-direction:column;
+            z-index:1000;
         }
+        .modal-header{
+            background:#0078d7;
+            color:#fff;
+            padding:8px 12px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            cursor:move;
+            border-top-left-radius:6px;
+            border-top-right-radius:6px;
+        }
+        .modal-header .title{font-weight:600;}
+        .modal-header .close{background:none;border:none;color:#fff;font-size:1.2rem;line-height:1;cursor:pointer;}
+        .modal-body{flex:1;overflow:auto;padding:12px;}
+        .modal-footer{padding:8px 12px;text-align:right;background:#f0f0f0;border-bottom-left-radius:6px;border-bottom-right-radius:6px;}
+        .modal-footer button{margin-left:6px;padding:4px 10px;border:none;border-radius:4px;cursor:pointer;}
+        .modal-footer .primary{background:#0078d7;color:#fff;}
+        .modal-footer .secondary{background:#e1e1e1;color:#000;}
+
+        /* ==== Start‑menu (simple) ==== */
+        #start-menu{
+            position:absolute;
+            bottom:40px;
+            left:0;
+            width:260px;
+            background:#fff;
+            border:1px solid #ccc;
+            border-radius:4px;
+            box-shadow:0 2px 12px rgba(0,0,0,.2);
+            display:none;
+            flex-direction:column;
+            z-index:1100;
+        }
+        #start-menu button{width:100%;text-align:left;padding:10px 12px;border:none;background:none;font:inherit;cursor:pointer;}
+        #start-menu button:hover{background:#f0f0f0;}
+        #start-menu button:active{background:#e1e1e1;}
+    </style>
+</head>
+<body>
+
+    <div id="desktop">
+        <div class="icon" data-app="notepad">
+            <img src="https://raw.githubusercontent.com/microsoft/windows-app-sdk-samples/main/WinUI3Gallery/Assets/StoreLogo.png" alt="Notepad">
+            <label>Notepad</label>
+        </div>
+        <div class="icon" data-app="calc">
+            <img src="https://raw.githubusercontent.com/microsoft/windows-app-sdk-samples/main/WinUI3Gallery/Assets/StoreLogo.png" alt="Calculator">
+            <label>Calculator</label>
+        </div>
+        <div class="icon" data-app="settings">
+            <img src="https://raw.githubusercontent.com/microsoft/windows-app-sdk-samples/main/WinUI3Gallery/Assets/StoreLogo.png" alt="Settings">
+            <label>Settings</label>
+        </div>
+    </div>
+
+    <div id="taskbar">
+        <button class="start-btn">Start</button>
+        <div class="search">
+            <input type="text" placeholder="Search">
+        </div>
+        <div class="tray">
+            <span class="clock" id="clock"></span>
+        </div>
+    </div>
+
+    <div id="start-menu">
+        <button data-app="notepad">Notepad</button>
+        <button data-app="calc">Calculator</button>
+        <button data-app="settings">Settings</button>
+    </div>
+
+    <div class="modal" id="modal-notepad" style="display:none;">
+        <div class="modal-header">
+            <span class="title">Notepad</span>
+            <button class="close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <textarea style="width:100%;height:100%;border:none;resize:none;font-family:Consolas,monospace;" placeholder="Type here..."></textarea>
+        </div>
+        <div class="modal-footer">
+            <button class="secondary">Cancel</button>
+            <button class="primary">Save</button>
+        </div>
+    </div>
+    <div class="modal" id="modal-calc" style="display:none;">
+        <div class="modal-header">
+            <span class="title">Calculator</span>
+            <button class="close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="text" id="calc-display" readonly style="width:100%;font-size:2rem;margin-bottom:8px;text-align:right;padding:4px;border:none;background:#fafafa;">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">
+                <button>7</button><button>8</button><button>9</button><button>/</button>
+                <button>4</button><button>5</button><button>6</button><button>*</button>
+                <button>1</button><button>2</button><button>3</button><button>-</button>
+                <button>0</button><button>.</button><button>=</button><button>+</button>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="secondary">Clear</button>
+            <button class="primary">OK</button>
+        </div>
+    </div>
+    <div class="modal" id="modal-settings" style="display:none;">
+        <div class="modal-header">
+            <span class="title">Settings</span>
+            <button class="close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>This is a placeholder settings pane.</p>
+            <p>In a real emulator you would have system options here.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="primary">Close</button>
+        </div>
+    </div>
         .content {
             padding: 40px;
         }
@@ -132,76 +280,4 @@
         <div class="header">
             <h1>Emulator-Windows</h1>
         </div>
-        <div class="content">
-            <div class="notice">
-                <h3>Important Security Notice</h3>
-                <p>
-                    This website serves as documentation and resource hub for the Emulator-Windows project.
-                    <strong>Windows emulation in a web browser is not provided</strong> for security reasons.
-                    Genuine OS emulation requires specialized native software with kernel-level access capabilities
-                    that cannot be safely implemented in a browser sandbox.
-                </p>
-            </div>
-
-            <h2>Project Overview</h2>
-            <p>
-                Emulator-Windows aims to develop a Windows 10 emulator for running and testing software
-                in an isolated, controlled environment. This project will provide developers with capabilities
-                to test, debug, and run Windows applications without needing physical Windows hardware.
-            </p>
-
-            <h2>Project Status</h2>
-            <div class="status-box">
-                <div class="status-item">
-                    <span class="status-label">Current Phase:</span>
-                    <span class="status-value">Planning & Initial Setup</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Emulation Core:</span>
-                    <span class="status-value">Development Pending</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">Target Release:</span>
-                    <span class="status-value">Q3 2026</span>
-                </div>
-            </div>
-
-            <h2>Planned Features</h2>
-            <ul>
-                <li>Windows 10 environment emulation with accurate system calls</li>
-                <li>Application testing and debugging support with breakpoints</li>
-                <li>Isolated execution environment with resource limits</li>
-                <li>Cross-platform compatibility (run on Linux, macOS, or Windows host)</li>
-                <li>Resource monitoring and performance metrics</li>
-                <li>Snapshot and rollback capabilities for quick state recovery</li>
-            </ul>
-
-            <h2>Technical Approach</h2>
-            <p>
-                The emulator will be built using a hybrid approach combining:
-            </p>
-            <ul>
-                <li><strong>System call translation layer</strong> - Intercepts and translates Windows API calls</li>
-                <li><strong>Virtual memory management</strong> - Emulates Windows memory layout</li>
-                <li><strong>I/O subsystem</strong> - Handles file system and device emulation</li>
-                <li><strong>Graphics rendering</strong> - Windows-compatible display output</li>
-            </ul>
-
-            <h2>Getting Started</h2>
-            <p>
-                Please refer to the <code>README.md</code> for detailed installation instructions,
-                build requirements, and contribution guidelines.
-            </p>
-
-            <h2>Contributing</h2>
-            <p>
-                Contributions are welcome! Please feel free to submit a Pull Request with
-                improvements, bug fixes, or new features. See our contributing guidelines for details.
-            </p>
         </div>
-        <div class="footer">
-            <p>Emulator-Windows Project • Documentation Site</p>
-        </div>
-    </div>
-</body>
-</html>
