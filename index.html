@@ -1,26 +1,207 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Emulator-Windows</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .content {
+            padding: 40px;
+        }
+        .notice {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 0 8px 8px 0;
+        }
+        .notice h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        .notice p {
+            color: #856404;
+            font-size: 0.95rem;
+        }
+        h2 {
+            color: #2c3e50;
+            margin: 30px 0 15px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+        .status-box {
+            background: #ecf0f1;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #dae0e5;
+        }
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        .status-label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .status-value {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+        li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #27ae60;
+            font-weight: bold;
+        }
+        code {
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px 40px;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            .content {
+                padding: 20px;
+            }
+            .header, .footer {
+                padding: 20px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Emulator-Windows</h1>
-    <p>A cross-platform Windows emulator website for showcasing OS compatibility and development resources.</p>
-    <h2>About</h2>
-    <p>This project provides a web-based interface to explore and test Windows emulation capabilities across all operating systems.</p>
-    <h2>Features</h2>
-    <ul>
-        <li>Cross-OS demonstration (Linux/macOS/Windows)</li>
-        <li>Interactive emulator demos</li>
-        <li>Documentation and guides</li>
-        <li>Real-time OS detection</li>
-    </ul>
-    <div id="os-detection"></div>
-    <script>
-        // Detect and display user's OS
-        const os = navigator.platform.toLowerCase();
-        document.getElementById('os-detection').innerHTML = 'Detected OS: ' + (/id/' + os ? 'iOS' : (/linux|android/.' + os ? 'Android/Linux' : (os.includes('win') ? 'Windows' : 'Other')));
-    </script>
+    <div class="container">
+        <div class="header">
+            <h1>Emulator-Windows</h1>
+        </div>
+        <div class="content">
+            <div class="notice">
+                <h3>Important Security Notice</h3>
+                <p>
+                    This website serves as documentation and resource hub for the Emulator-Windows project.
+                    <strong>Windows emulation in a web browser is not provided</strong> for security reasons.
+                    Genuine OS emulation requires specialized native software with kernel-level access capabilities
+                    that cannot be safely implemented in a browser sandbox.
+                </p>
+            </div>
+
+            <h2>Project Overview</h2>
+            <p>
+                Emulator-Windows aims to develop a Windows 10 emulator for running and testing software
+                in an isolated, controlled environment. This project will provide developers with capabilities
+                to test, debug, and run Windows applications without needing physical Windows hardware.
+            </p>
+
+            <h2>Project Status</h2>
+            <div class="status-box">
+                <div class="status-item">
+                    <span class="status-label">Current Phase:</span>
+                    <span class="status-value">Planning & Initial Setup</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Emulation Core:</span>
+                    <span class="status-value">Development Pending</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Target Release:</span>
+                    <span class="status-value">Q3 2026</span>
+                </div>
+            </div>
+
+            <h2>Planned Features</h2>
+            <ul>
+                <li>Windows 10 environment emulation with accurate system calls</li>
+                <li>Application testing and debugging support with breakpoints</li>
+                <li>Isolated execution environment with resource limits</li>
+                <li>Cross-platform compatibility (run on Linux, macOS, or Windows host)</li>
+                <li>Resource monitoring and performance metrics</li>
+                <li>Snapshot and rollback capabilities for quick state recovery</li>
+            </ul>
+
+            <h2>Technical Approach</h2>
+            <p>
+                The emulator will be built using a hybrid approach combining:
+            </p>
+            <ul>
+                <li><strong>System call translation layer</strong> - Intercepts and translates Windows API calls</li>
+                <li><strong>Virtual memory management</strong> - Emulates Windows memory layout</li>
+                <li><strong>I/O subsystem</strong> - Handles file system and device emulation</li>
+                <li><strong>Graphics rendering</strong> - Windows-compatible display output</li>
+            </ul>
+
+            <h2>Getting Started</h2>
+            <p>
+                Please refer to the <code>README.md</code> for detailed installation instructions,
+                build requirements, and contribution guidelines.
+            </p>
+
+            <h2>Contributing</h2>
+            <p>
+                Contributions are welcome! Please feel free to submit a Pull Request with
+                improvements, bug fixes, or new features. See our contributing guidelines for details.
+            </p>
+        </div>
+        <div class="footer">
+            <p>Emulator-Windows Project • Documentation Site</p>
+        </div>
+    </div>
 </body>
 </html>
