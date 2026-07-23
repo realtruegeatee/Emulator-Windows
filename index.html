@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Emulator-Windows</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <h1>Emulator-Windows</h1>
+    <p>A cross-platform Windows emulator website for showcasing OS compatibility and development resources.</p>
+    <h2>About</h2>
+    <p>This project provides a web-based interface to explore and test Windows emulation capabilities across all operating systems.</p>
+    <h2>Features</h2>
+    <ul>
+        <li>Cross-OS demonstration (Linux/macOS/Windows)</li>
+        <li>Interactive emulator demos</li>
+        <li>Documentation and guides</li>
+        <li>Real-time OS detection</li>
+    </ul>
+    <div id="os-detection"></div>
+    <script>
+        // Detect and display user's OS
+        const os = navigator.platform.toLowerCase();
+        document.getElementById('os-detection').innerHTML = 'Detected OS: ' + (/id/' + os ? 'iOS' : (/linux|android/.' + os ? 'Android/Linux' : (os.includes('win') ? 'Windows' : 'Other')));
+    </script>
+</body>
+</html>
