@@ -12,6 +12,9 @@ This project is a browser demo rather than a full virtual machine. It provides a
 - Notepad with locally saved notes
 - Calculator with basic arithmetic
 - Settings for accent color and contrast
+- File Explorer with browser file upload, virtual files, and downloads
+- App Store with persistent app installation
+- Draggable desktop icons and application windows
 - Responsive layout for desktop and mobile browsers
 
 ## Getting Started
@@ -34,6 +37,8 @@ This project is a browser demo rather than a full virtual machine. It provides a
 
 The live demo is published at:
 `https://realtruegeatee.github.io/Emulator-Windows/`
+
+Files and installed apps are stored locally in the browser. The demo cannot access the host computer's files without an explicit upload, and it cannot install native Windows applications.
 
 ## Project Structure
 

@@ -62,6 +62,7 @@
       border-color: rgba(255,255,255,.45);
       outline: none;
     }
+    .desktop-icon.dragging { opacity: .7; }
     .desktop-icon .glyph {
       align-items: center;
       background: linear-gradient(145deg, #fff, #dce8f5);
@@ -99,6 +100,7 @@
     }
     .window.open { display: flex; }
     .window.active { z-index: 20; }
+    .window.dragging { opacity: .92; }
     .titlebar {
       align-items: center;
       background: rgba(255,255,255,.92);
@@ -157,6 +159,29 @@
     .settings { display: grid; gap: 14px; }
     .settings label { align-items: center; display: flex; justify-content: space-between; }
     .error { color: #a4262c; min-height: 20px; }
+    .toolbar { align-items: center; display: flex; gap: 8px; margin-bottom: 12px; }
+    .toolbar button, .toolbar input, .file-row button, .store-card button {
+      border: 1px solid #b8b8b8;
+      border-radius: 4px;
+      padding: 6px 10px;
+    }
+    .file-list { display: grid; gap: 6px; }
+    .file-row {
+      align-items: center;
+      background: rgba(255,255,255,.72);
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      display: flex;
+      gap: 10px;
+      justify-content: space-between;
+      padding: 9px 10px;
+    }
+    .file-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .store-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+    .store-card { background: rgba(255,255,255,.72); border: 1px solid #ddd; border-radius: 6px; padding: 12px; }
+    .store-card h3 { margin: 0 0 6px; }
+    .store-card p { color: #555; min-height: 38px; margin: 0 0 10px; }
+    .installed { color: #287c2b; font-size: 12px; }
 
     #start-menu {
       background: rgba(248,248,248,.88);
@@ -249,6 +274,12 @@
     <button class="desktop-icon" data-app="settings" style="left: 18px; top: 206px;">
       <span class="glyph" aria-hidden="true">⚙️</span><span>Settings</span>
     </button>
+    <button class="desktop-icon" data-app="explorer" style="left: 18px; top: 300px;">
+      <span class="glyph" aria-hidden="true">📁</span><span>File Explorer</span>
+    </button>
+    <button class="desktop-icon" data-app="store" style="left: 18px; top: 394px;">
+      <span class="glyph" aria-hidden="true">🛍️</span><span>App Store</span>
+    </button>
 
     <section class="window" id="window-notepad" aria-labelledby="notepad-title">
       <header class="titlebar">
@@ -288,6 +319,30 @@
         <p>Changes are saved in this browser.</p>
       </div>
     </section>
+    <section class="window" id="window-explorer" aria-labelledby="explorer-title">
+      <header class="titlebar">
+        <strong id="explorer-title">📁 File Explorer</strong>
+        <button class="close-window" aria-label="Close File Explorer">×</button>
+      </header>
+      <div class="window-body">
+        <div class="toolbar">
+          <button id="upload-file">Upload file</button>
+          <input id="file-picker" type="file" hidden>
+          <button id="new-file">New text file</button>
+        </div>
+        <div class="file-list" id="file-list"></div>
+      </div>
+    </section>
+    <section class="window" id="window-store" aria-labelledby="store-title">
+      <header class="titlebar">
+        <strong id="store-title">🛍️ App Store</strong>
+        <button class="close-window" aria-label="Close App Store">×</button>
+      </header>
+      <div class="window-body">
+        <p>Install apps into this browser-based Windows environment.</p>
+        <div class="store-grid" id="store-grid"></div>
+      </div>
+    </section>
   </main>
 
   <nav id="start-menu" aria-label="Start menu">
@@ -295,6 +350,8 @@
     <button class="app-launcher" data-app="notepad">📝 &nbsp; Notepad</button>
     <button class="app-launcher" data-app="calculator">🧮 &nbsp; Calculator</button>
     <button class="app-launcher" data-app="settings">⚙️ &nbsp; Settings</button>
+    <button class="app-launcher" data-app="explorer">📁 &nbsp; File Explorer</button>
+    <button class="app-launcher" data-app="store">🛍️ &nbsp; App Store</button>
   </nav>
   <footer id="taskbar">
     <button id="start-button" aria-expanded="false" aria-controls="start-menu" aria-label="Open Start menu">⊞</button>
@@ -309,9 +366,30 @@
       const startButton = document.getElementById("start-button");
       const windows = [...document.querySelectorAll(".window")];
       let zIndex = 20;
+      const fileKey = "emulator-files";
+      const appKey = "emulator-installed-apps";
+      const catalog = [
+        { id: "paint", name: "Paint", icon: "🎨", description: "A simple drawing workspace." },
+        { id: "terminal", name: "Terminal", icon: "⌨️", description: "A simulated command prompt." },
+        { id: "photos", name: "Photos", icon: "🖼️", description: "Browse your virtual pictures." }
+      ];
+      const installedApps = new Set(JSON.parse(localStorage.getItem(appKey) || "[]"));
+      const getFiles = () => JSON.parse(localStorage.getItem(fileKey) || "[]");
+      const saveFiles = (files) => localStorage.setItem(fileKey, JSON.stringify(files));
 
       const openApp = (name) => {
-        const appWindow = document.getElementById(`window-${name}`);
+        let appWindow = document.getElementById(`window-${name}`);
+        if (!appWindow && installedApps.has(name)) {
+          const app = catalog.find((item) => item.id === name);
+          appWindow = document.createElement("section");
+          appWindow.className = "window";
+          appWindow.id = `window-${name}`;
+          appWindow.innerHTML = `<header class="titlebar"><strong id="${name}-title">${app.icon} ${app.name}</strong><button class="close-window" aria-label="Close ${app.name}">×</button></header><div class="window-body"><h2>${app.name}</h2><p>${app.description}</p><p>This installed app runs inside the emulator.</p></div>`;
+          desktop.appendChild(appWindow);
+          appWindow.querySelector(".close-window").addEventListener("click", () => appWindow.classList.remove("open"));
+          appWindow.addEventListener("pointerdown", () => focusWindow(appWindow));
+          makeDraggable(appWindow, appWindow.querySelector(".titlebar"), `emulator-window-${appWindow.id}`);
+        }
         if (!appWindow) return;
         appWindow.classList.add("open", "active");
         appWindow.style.zIndex = ++zIndex;
@@ -320,8 +398,9 @@
         startButton.setAttribute("aria-expanded", "false");
       };
 
-      document.querySelectorAll("[data-app]").forEach((launcher) => {
-        launcher.addEventListener("click", () => openApp(launcher.dataset.app));
+      document.addEventListener("click", (event) => {
+        const launcher = event.target.closest("[data-app]");
+        if (launcher) openApp(launcher.dataset.app);
       });
       startButton.addEventListener("click", () => {
         const open = startMenu.classList.toggle("open");
@@ -333,12 +412,54 @@
           startButton.setAttribute("aria-expanded", "false");
         }
       });
+      const focusWindow = (appWindow) => {
+        appWindow.style.zIndex = ++zIndex;
+        document.querySelectorAll(".window").forEach((item) => item.classList.toggle("active", item === appWindow));
+      };
       windows.forEach((appWindow) => {
-        appWindow.addEventListener("pointerdown", () => {
-          appWindow.style.zIndex = ++zIndex;
-          windows.forEach((item) => item.classList.toggle("active", item === appWindow));
-        });
+        appWindow.addEventListener("pointerdown", () => focusWindow(appWindow));
         appWindow.querySelector(".close-window").addEventListener("click", () => appWindow.classList.remove("open"));
+      });
+
+      const makeDraggable = (element, handle, storageKey) => {
+        let startX, startY, originX, originY;
+        handle.addEventListener("pointerdown", (event) => {
+          if (event.target.closest("button")) return;
+          const rect = element.getBoundingClientRect();
+          startX = event.clientX; startY = event.clientY;
+          originX = rect.left; originY = rect.top;
+          element.classList.add("dragging");
+          handle.setPointerCapture(event.pointerId);
+          const move = (moveEvent) => {
+            const x = Math.max(0, Math.min(window.innerWidth - element.offsetWidth, originX + moveEvent.clientX - startX));
+            const y = Math.max(0, Math.min(window.innerHeight - 70 - element.offsetHeight, originY + moveEvent.clientY - startY));
+            element.style.left = `${x}px`;
+            element.style.top = `${y}px`;
+            element.style.transform = "none";
+          };
+          const end = () => {
+            element.classList.remove("dragging");
+            handle.removeEventListener("pointermove", move);
+            handle.removeEventListener("pointerup", end);
+            if (storageKey) localStorage.setItem(storageKey, JSON.stringify({ left: element.style.left, top: element.style.top }));
+          };
+          handle.addEventListener("pointermove", move);
+          handle.addEventListener("pointerup", end, { once: true });
+        });
+      };
+      document.querySelectorAll(".desktop-icon").forEach((icon) => {
+        const saved = JSON.parse(localStorage.getItem(`emulator-icon-${icon.dataset.app}`) || "null");
+        if (saved) { icon.style.left = saved.left; icon.style.top = saved.top; }
+        makeDraggable(icon, icon, `emulator-icon-${icon.dataset.app}`);
+      });
+      document.querySelectorAll(".window").forEach((appWindow) => {
+        const saved = JSON.parse(localStorage.getItem(`emulator-window-${appWindow.id}`) || "null");
+        if (saved) {
+          appWindow.style.left = saved.left;
+          appWindow.style.top = saved.top;
+          appWindow.style.transform = "none";
+        }
+        makeDraggable(appWindow, appWindow.querySelector(".titlebar"), `emulator-window-${appWindow.id}`);
       });
 
       const notes = document.querySelector(".notepad-area");
@@ -347,6 +468,78 @@
       document.querySelector(".clear-notes").addEventListener("click", () => {
         notes.value = "";
         localStorage.removeItem("emulator-notes");
+      });
+
+      const fileList = document.getElementById("file-list");
+      const renderFiles = () => {
+        const files = getFiles();
+        fileList.innerHTML = files.length ? files.map((file, index) => `<div class="file-row"><span>📄 ${file.name}</span><button data-download="${index}">Download</button></div>`).join("") : "<p>No files yet. Upload a file or create a text file.</p>";
+      };
+      renderFiles();
+      document.getElementById("upload-file").addEventListener("click", () => document.getElementById("file-picker").click());
+      document.getElementById("file-picker").addEventListener("change", (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const files = getFiles();
+          files.push({ name: file.name, type: file.type || "application/octet-stream", content: reader.result });
+          saveFiles(files);
+          renderFiles();
+          event.target.value = "";
+        };
+        reader.readAsDataURL(file);
+      });
+      document.getElementById("new-file").addEventListener("click", () => {
+        const name = `New Text Document ${getFiles().length + 1}.txt`;
+        const files = getFiles();
+        files.push({ name, type: "text/plain", content: `data:text/plain;charset=utf-8,${encodeURIComponent("")}` });
+        saveFiles(files);
+        renderFiles();
+      });
+      fileList.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-download]");
+        if (!button) return;
+        const file = getFiles()[Number(button.dataset.download)];
+        if (!file) return;
+        const link = document.createElement("a");
+        link.href = file.content;
+        link.download = file.name;
+        link.click();
+      });
+
+      const storeGrid = document.getElementById("store-grid");
+      const renderStore = () => {
+        storeGrid.innerHTML = catalog.map((app) => installedApps.has(app.id)
+          ? `<article class="store-card"><h3>${app.icon} ${app.name}</h3><p>${app.description}</p><span class="installed">Installed</span></article>`
+          : `<article class="store-card"><h3>${app.icon} ${app.name}</h3><p>${app.description}</p><button data-install="${app.id}" class="primary">Install</button></article>`).join("");
+      };
+      renderStore();
+      const addAppLauncher = (app) => {
+        const menuButton = document.createElement("button");
+        menuButton.className = "app-launcher";
+        menuButton.dataset.app = app.id;
+        menuButton.textContent = `${app.icon}  ${app.name}`;
+        startMenu.appendChild(menuButton);
+        const icon = document.createElement("button");
+        icon.className = "desktop-icon";
+        icon.dataset.app = app.id;
+        icon.style.left = "112px";
+        icon.style.top = `${18 + document.querySelectorAll(".desktop-icon").length * 94}px`;
+        icon.innerHTML = `<span class="glyph" aria-hidden="true">${app.icon}</span><span>${app.name}</span>`;
+        desktop.appendChild(icon);
+        makeDraggable(icon, icon, `emulator-icon-${app.id}`);
+      };
+      catalog.filter((app) => installedApps.has(app.id)).forEach(addAppLauncher);
+      storeGrid.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-install]");
+        if (!button) return;
+        const app = catalog.find((item) => item.id === button.dataset.install);
+        if (!app || installedApps.has(app.id)) return;
+        installedApps.add(app.id);
+        localStorage.setItem(appKey, JSON.stringify([...installedApps]));
+        addAppLauncher(app);
+        renderStore();
       });
 
       const display = document.getElementById("calc-display");
