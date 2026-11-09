@@ -182,6 +182,13 @@
     .store-card h3 { margin: 0 0 6px; }
     .store-card p { color: #555; min-height: 38px; margin: 0 0 10px; }
     .installed { color: #287c2b; font-size: 12px; }
+    .game-board { display: grid; gap: 5px; margin: 14px auto; max-width: 310px; }
+    .game-board button { aspect-ratio: 1; background: #fff; border: 1px solid #aaa; border-radius: 4px; font-size: 22px; }
+    .game-status { font-weight: 600; min-height: 22px; text-align: center; }
+    .game-controls { display: flex; gap: 8px; justify-content: center; }
+    .web-app-url { display: flex; gap: 8px; margin: 12px 0; }
+    .web-app-url input { border: 1px solid #aaa; border-radius: 4px; flex: 1; padding: 7px; }
+    .web-frame { border: 0; height: 360px; width: 100%; }
 
     #start-menu {
       background: rgba(248,248,248,.88);
@@ -369,13 +376,25 @@
       const fileKey = "emulator-files";
       const appKey = "emulator-installed-apps";
       const catalog = [
-        { id: "paint", name: "Paint", icon: "🎨", description: "A simple drawing workspace." },
-        { id: "terminal", name: "Terminal", icon: "⌨️", description: "A simulated command prompt." },
-        { id: "photos", name: "Photos", icon: "🖼️", description: "Browse your virtual pictures." }
+        { id: "tictactoe", name: "Tic-Tac-Toe", icon: "⭕", description: "Play against the computer." },
+        { id: "snake", name: "Snake", icon: "🐍", description: "Use the arrow keys to eat apples." },
+        { id: "paint", name: "Paint", icon: "🎨", description: "Draw with your mouse or touch." }
       ];
       const installedApps = new Set(JSON.parse(localStorage.getItem(appKey) || "[]"));
       const getFiles = () => JSON.parse(localStorage.getItem(fileKey) || "[]");
       const saveFiles = (files) => localStorage.setItem(fileKey, JSON.stringify(files));
+      const appContent = (app) => {
+        if (app.id === "tictactoe") {
+          return `<p class="game-status" data-status>Turn: X</p><div class="game-board" data-board style="grid-template-columns:repeat(3,1fr)">${Array.from({ length: 9 }, (_, i) => `<button data-cell="${i}" aria-label="Cell ${i + 1}"></button>`).join("")}</div><div class="game-controls"><button data-restart>New game</button></div>`;
+        }
+        if (app.id === "snake") {
+          return `<p class="game-status" data-snake-status>Use the arrow keys to start.</p><canvas width="300" height="300" data-snake-canvas style="background:#102a43;display:block;margin:12px auto;max-width:100%"></canvas><div class="game-controls"><button data-snake-start>Start / Restart</button></div>`;
+        }
+        if (app.id === "paint") {
+          return `<p>Draw with your pointer. Use Clear to start over.</p><canvas width="560" height="300" data-paint-canvas style="background:#fff;border:1px solid #aaa;display:block;max-width:100%;touch-action:none"></canvas><div class="game-controls"><button data-paint-clear>Clear</button></div>`;
+        }
+        return `<h2>${app.name}</h2><p>${app.description}</p>`;
+      };
 
       const openApp = (name) => {
         let appWindow = document.getElementById(`window-${name}`);
@@ -384,11 +403,12 @@
           appWindow = document.createElement("section");
           appWindow.className = "window";
           appWindow.id = `window-${name}`;
-          appWindow.innerHTML = `<header class="titlebar"><strong id="${name}-title">${app.icon} ${app.name}</strong><button class="close-window" aria-label="Close ${app.name}">×</button></header><div class="window-body"><h2>${app.name}</h2><p>${app.description}</p><p>This installed app runs inside the emulator.</p></div>`;
+          appWindow.innerHTML = `<header class="titlebar"><strong id="${name}-title">${app.icon} ${app.name}</strong><button class="close-window" aria-label="Close ${app.name}">×</button></header><div class="window-body">${appContent(app)}</div>`;
           desktop.appendChild(appWindow);
           appWindow.querySelector(".close-window").addEventListener("click", () => appWindow.classList.remove("open"));
           appWindow.addEventListener("pointerdown", () => focusWindow(appWindow));
           makeDraggable(appWindow, appWindow.querySelector(".titlebar"), `emulator-window-${appWindow.id}`);
+          initializeApp(appWindow, app);
         }
         if (!appWindow) return;
         appWindow.classList.add("open", "active");
@@ -422,30 +442,43 @@
       });
 
       const makeDraggable = (element, handle, storageKey) => {
-        let startX, startY, originX, originY;
+        let startX, startY, originX, originY, moved;
         handle.addEventListener("pointerdown", (event) => {
-          if (event.target.closest("button")) return;
+          if (event.target.closest(".close-window")) return;
+          event.preventDefault();
           const rect = element.getBoundingClientRect();
           startX = event.clientX; startY = event.clientY;
           originX = rect.left; originY = rect.top;
+          moved = false;
           element.classList.add("dragging");
           handle.setPointerCapture(event.pointerId);
           const move = (moveEvent) => {
-            const x = Math.max(0, Math.min(window.innerWidth - element.offsetWidth, originX + moveEvent.clientX - startX));
-            const y = Math.max(0, Math.min(window.innerHeight - 70 - element.offsetHeight, originY + moveEvent.clientY - startY));
+            moved = moved || Math.abs(moveEvent.clientX - startX) > 4 || Math.abs(moveEvent.clientY - startY) > 4;
+            const bounds = desktop.getBoundingClientRect();
+            const x = Math.max(0, Math.min(bounds.width - element.offsetWidth, originX - bounds.left + moveEvent.clientX - startX));
+            const y = Math.max(0, Math.min(bounds.height - element.offsetHeight, originY - bounds.top + moveEvent.clientY - startY));
             element.style.left = `${x}px`;
             element.style.top = `${y}px`;
             element.style.transform = "none";
           };
           const end = () => {
             element.classList.remove("dragging");
+            if (moved) element.dataset.dragged = "true";
             handle.removeEventListener("pointermove", move);
             handle.removeEventListener("pointerup", end);
             if (storageKey) localStorage.setItem(storageKey, JSON.stringify({ left: element.style.left, top: element.style.top }));
           };
           handle.addEventListener("pointermove", move);
           handle.addEventListener("pointerup", end, { once: true });
+          handle.addEventListener("pointercancel", end, { once: true });
         });
+        element.addEventListener("click", (event) => {
+          if (element.dataset.dragged === "true") {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            element.dataset.dragged = "";
+          }
+        }, true);
       };
       document.querySelectorAll(".desktop-icon").forEach((icon) => {
         const saved = JSON.parse(localStorage.getItem(`emulator-icon-${icon.dataset.app}`) || "null");
@@ -509,6 +542,26 @@
       });
 
       const storeGrid = document.getElementById("store-grid");
+      const storeBody = document.querySelector("#window-store .window-body");
+      const externalUrl = document.createElement("div");
+      externalUrl.className = "web-app-url";
+      externalUrl.innerHTML = '<input type="url" id="external-url" placeholder="https://example.com"><button id="open-external" class="primary">Open web app</button>';
+      storeBody.appendChild(externalUrl);
+      document.getElementById("open-external").addEventListener("click", () => {
+        const value = document.getElementById("external-url").value.trim();
+        let url;
+        try { url = new URL(value); } catch { return; }
+        if (!["http:", "https:"].includes(url.protocol)) return;
+        const appWindow = document.createElement("section");
+        appWindow.className = "window open active";
+        appWindow.id = `window-web-${Date.now()}`;
+        appWindow.innerHTML = `<header class="titlebar"><strong>🌐 ${url.hostname}</strong><button class="close-window" aria-label="Close web app">×</button></header><div class="window-body"><iframe class="web-frame" src="${url.href}" title="${url.hostname}" sandbox="allow-forms allow-modals allow-popups allow-scripts"></iframe><p>If the site refuses embedding, open it in a new tab instead.</p><a href="${url.href}" target="_blank" rel="noopener">Open in new tab</a></div>`;
+        desktop.appendChild(appWindow);
+        appWindow.style.zIndex = ++zIndex;
+        appWindow.querySelector(".close-window").addEventListener("click", () => appWindow.remove());
+        appWindow.addEventListener("pointerdown", () => focusWindow(appWindow));
+        makeDraggable(appWindow, appWindow.querySelector(".titlebar"), `emulator-window-${appWindow.id}`);
+      });
       const renderStore = () => {
         storeGrid.innerHTML = catalog.map((app) => installedApps.has(app.id)
           ? `<article class="store-card"><h3>${app.icon} ${app.name}</h3><p>${app.description}</p><span class="installed">Installed</span></article>`
@@ -541,6 +594,59 @@
         addAppLauncher(app);
         renderStore();
       });
+
+      function initializeApp(appWindow, app) {
+        if (app.id === "tictactoe") {
+          let board = Array(9).fill("");
+          let turn = "X";
+          const status = appWindow.querySelector("[data-status]");
+          const cells = [...appWindow.querySelectorAll("[data-cell]")];
+          const winner = () => [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]].find(([a,b,c]) => board[a] && board[a] === board[b] && board[a] === board[c]);
+          const reset = () => { board = Array(9).fill(""); turn = "X"; cells.forEach((cell) => { cell.textContent = ""; cell.disabled = false; }); status.textContent = "Turn: X"; };
+          cells.forEach((cell, index) => cell.addEventListener("click", () => {
+            if (board[index] || turn !== "X") return;
+            board[index] = "X"; cell.textContent = "X";
+            if (winner() || board.every(Boolean)) { status.textContent = winner() ? "You win!" : "Draw."; cells.forEach((item) => { item.disabled = true; }); return; }
+            turn = "O"; status.textContent = "Computer is thinking...";
+            setTimeout(() => {
+              const free = board.map((value, i) => value ? -1 : i).filter((i) => i >= 0);
+              const move = free[Math.floor(Math.random() * free.length)];
+              board[move] = "O"; cells[move].textContent = "O";
+              const result = winner();
+              if (result || board.every(Boolean)) { status.textContent = result ? "Computer wins." : "Draw."; cells.forEach((item) => { item.disabled = true; }); }
+              else { turn = "X"; status.textContent = "Turn: X"; }
+            }, 300);
+          }));
+          appWindow.querySelector("[data-restart]").addEventListener("click", reset);
+        }
+        if (app.id === "paint") {
+          const canvas = appWindow.querySelector("[data-paint-canvas]");
+          const ctx = canvas.getContext("2d");
+          let drawing = false;
+          const point = (event) => { const rect = canvas.getBoundingClientRect(); return [(event.clientX - rect.left) * canvas.width / rect.width, (event.clientY - rect.top) * canvas.height / rect.height]; };
+          canvas.addEventListener("pointerdown", (event) => { drawing = true; canvas.setPointerCapture(event.pointerId); const [x,y] = point(event); ctx.beginPath(); ctx.moveTo(x,y); });
+          canvas.addEventListener("pointermove", (event) => { if (!drawing) return; const [x,y] = point(event); ctx.lineTo(x,y); ctx.strokeStyle = "#111"; ctx.lineWidth = 4; ctx.lineCap = "round"; ctx.stroke(); });
+          canvas.addEventListener("pointerup", () => { drawing = false; });
+          appWindow.querySelector("[data-paint-clear]").addEventListener("click", () => ctx.clearRect(0, 0, canvas.width, canvas.height));
+        }
+        if (app.id === "snake") {
+          const canvas = appWindow.querySelector("[data-snake-canvas]");
+          const ctx = canvas.getContext("2d");
+          const status = appWindow.querySelector("[data-snake-status]");
+          let timer;
+          const start = () => {
+            clearInterval(timer);
+            let snake = [{ x: 7, y: 7 }], direction = { x: 1, y: 0 }, food = { x: 3, y: 5 };
+            const draw = () => { ctx.clearRect(0,0,300,300); ctx.fillStyle = "#70e000"; snake.forEach((part) => ctx.fillRect(part.x*20, part.y*20, 18, 18)); ctx.fillStyle = "#ef233c"; ctx.fillRect(food.x*20, food.y*20, 18, 18); };
+            const step = () => { const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y }; if (head.x < 0 || head.x >= 15 || head.y < 0 || head.y >= 15 || snake.some((part) => part.x === head.x && part.y === head.y)) { clearInterval(timer); status.textContent = "Game over. Press restart."; return; } snake.unshift(head); if (head.x === food.x && head.y === food.y) food = { x: Math.floor(Math.random()*15), y: Math.floor(Math.random()*15) }; else snake.pop(); draw(); };
+            timer = setInterval(step, 140); status.textContent = "Use arrow keys.";
+            const key = (event) => { if (event.key === "ArrowUp" && direction.y !== 1) direction={x:0,y:-1}; if (event.key === "ArrowDown" && direction.y !== -1) direction={x:0,y:1}; if (event.key === "ArrowLeft" && direction.x !== 1) direction={x:-1,y:0}; if (event.key === "ArrowRight" && direction.x !== -1) direction={x:1,y:0}; };
+            document.addEventListener("keydown", key, { once: true });
+            draw();
+          };
+          appWindow.querySelector("[data-snake-start]").addEventListener("click", start);
+        }
+      }
 
       const display = document.getElementById("calc-display");
       const calcError = document.getElementById("calc-error");
