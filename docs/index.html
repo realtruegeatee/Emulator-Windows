@@ -1,283 +1,410 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emulator-Windows – Windows 10 Browser Demo</title>
-    <style>
-        /* ==== Global reset ==== */
-        *, *::before, *::after {box-sizing:border-box;margin:0;padding:0;}
-        html,body{height:100%;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#0078d7;color:#fff;overflow:hidden;}
-        body{display:flex;flex-direction:column;}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A lightweight Windows desktop emulator running in your browser.">
+  <title>Emulator-Windows</title>
+  <style>
+    :root {
+      --accent: #0067c0;
+      --surface: #f9f9f9;
+      --text: #202020;
+      --taskbar: rgba(243, 243, 243, .82);
+    }
 
-        /* ==== Desktop background ==== */
-        #desktop{
-            flex:1;
-            position:relative;
-            background:url('https://raw.githubusercontent.com/microsoft/Windows-universal-samples/master/Samples/XamlDisplay/images/Items/grid.png') repeat;
-            overflow:hidden;
-        }
-        #desktop .icon{
-            position:absolute;
-            width:64px;height:64px;
-            text-align:center;
-            cursor:move;
-            user-select:none;
-            top:20px;left:20px;
-        }
-        #desktop .icon img{width:48px;height:48px;margin-bottom:4px;}
-        #desktop .icon label{font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;width:64px;}
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: #0c2d5a;
+      color: var(--text);
+      font: 14px "Segoe UI", Tahoma, sans-serif;
+      overflow: hidden;
+    }
+    button, input, textarea { font: inherit; }
+    button { cursor: pointer; }
 
-        /* ==== Taskbar ==== */
-        #taskbar{
-            height:40px;
-            background:#0078d7;
-            display:flex;
-            align-items:center;
-            padding:0 10px;
-            color:#fff;
-            font-size:0.9rem;
-        }
-        #taskbar .start-btn{
-            background:none;
-            border:none;
-            color:#fff;
-            font-weight:600;
-            cursor:pointer;
-            padding:0 8px;
-        }
-        #taskbar .start-btn:hover{background:rgba(255,255,255,0.2);border-radius:4px;}
-        #taskbar .search{flex:1;margin:0 12px;}
-        #taskbar .search input{width:100%;padding:4px 8px;border:none;border-radius:4px;font:inherit;}
-        #taskbar .tray{display:flex;gap:8px;align-items:center;}
-        #taskbar .tray .clock{font-variant-numeric:tabular-nums;}
+    #desktop {
+      background:
+        radial-gradient(ellipse at 68% 52%, rgba(119, 205, 255, .9) 0%, rgba(43, 126, 201, .7) 22%, transparent 48%),
+        radial-gradient(ellipse at 50% 70%, rgba(37, 105, 179, .9), transparent 62%),
+        linear-gradient(140deg, #0b2f6d 0%, #1672b9 48%, #071f50 100%);
+      height: calc(100% - 58px);
+      overflow: hidden;
+      position: relative;
+    }
+    #desktop::before {
+      background:
+        linear-gradient(115deg, transparent 42%, rgba(255,255,255,.22) 42.2%, transparent 43%),
+        radial-gradient(ellipse at center, rgba(255,255,255,.16), transparent 58%);
+      content: "";
+      inset: 0;
+      pointer-events: none;
+      position: absolute;
+    }
+    .desktop-icon {
+      align-items: center;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 6px 2px;
+      position: absolute;
+      text-shadow: 0 1px 3px rgba(0,0,0,.8);
+      width: 82px;
+      z-index: 1;
+    }
+    .desktop-icon:hover, .desktop-icon:focus-visible {
+      background: rgba(255,255,255,.18);
+      border-color: rgba(255,255,255,.45);
+      outline: none;
+    }
+    .desktop-icon .glyph {
+      align-items: center;
+      background: linear-gradient(145deg, #fff, #dce8f5);
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.35);
+      color: var(--accent);
+      display: flex;
+      font-size: 25px;
+      height: 45px;
+      justify-content: center;
+      line-height: 1;
+      text-shadow: none;
+      width: 45px;
+    }
 
-        /* ==== Modal windows ==== */
-        .modal{
-            position:absolute;
-            left:50%;top:50%;
-            transform:translate(-50%,-50%);
-            background:#fff;
-            color:#000;
-            border-radius:6px;
-            box-shadow:0 4px 20px rgba(0,0,0,.3);
-            min-width:260px;
-            max-width:80vw;
-            max-height:80vh;
-            display:flex;
-            flex-direction:column;
-            z-index:1000;
-        }
-        .modal-header{
-            background:#0078d7;
-            color:#fff;
-            padding:8px 12px;
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            cursor:move;
-            border-top-left-radius:6px;
-            border-top-right-radius:6px;
-        }
-        .modal-header .title{font-weight:600;}
-        .modal-header .close{background:none;border:none;color:#fff;font-size:1.2rem;line-height:1;cursor:pointer;}
-        .modal-body{flex:1;overflow:auto;padding:12px;}
-        .modal-footer{padding:8px 12px;text-align:right;background:#f0f0f0;border-bottom-left-radius:6px;border-bottom-right-radius:6px;}
-        .modal-footer button{margin-left:6px;padding:4px 10px;border:none;border-radius:4px;cursor:pointer;}
-        .modal-footer .primary{background:#0078d7;color:#fff;}
-        .modal-footer .secondary{background:#e1e1e1;color:#000;}
+    .window {
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,.7);
+      border-radius: 8px;
+      box-shadow: 0 18px 45px rgba(0,0,0,.42);
+      display: none;
+      flex-direction: column;
+      left: 50%;
+      max-height: calc(100% - 24px);
+      max-width: calc(100% - 24px);
+      min-height: 190px;
+      min-width: 290px;
+      overflow: hidden;
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      backdrop-filter: blur(18px);
+      width: 460px;
+      z-index: 10;
+    }
+    .window.open { display: flex; }
+    .window.active { z-index: 20; }
+    .titlebar {
+      align-items: center;
+      background: rgba(255,255,255,.92);
+      color: #202020;
+      display: flex;
+      gap: 8px;
+      min-height: 42px;
+      padding: 0 6px 0 14px;
+      user-select: none;
+    }
+    .titlebar strong { flex: 1; }
+    .titlebar button {
+      background: transparent;
+      border: 0;
+      color: inherit;
+      font-size: 20px;
+      height: 30px;
+      line-height: 1;
+      width: 32px;
+    }
+    .titlebar button:hover { background: #c42b1c; color: #fff; }
+    .window-body { flex: 1; overflow: auto; padding: 14px; }
+    .window-footer {
+      background: rgba(235,235,235,.9);
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      padding: 9px 12px;
+    }
+    .window-footer button, .settings button {
+      border: 1px solid #b8b8b8;
+      border-radius: 4px;
+      padding: 6px 14px;
+    }
+    .primary { background: var(--accent); border-color: var(--accent) !important; color: #fff; }
+    .notepad-area {
+      border: 1px solid #aaa;
+      display: block;
+      min-height: 260px;
+      padding: 10px;
+      resize: none;
+      width: 100%;
+    }
+    .calc-display {
+      background: #fff;
+      border: 1px solid #aaa;
+      font-size: 26px;
+      margin-bottom: 10px;
+      padding: 8px;
+      text-align: right;
+      width: 100%;
+    }
+    .calc-grid { display: grid; gap: 6px; grid-template-columns: repeat(4, 1fr); }
+    .calc-grid button { border: 1px solid #bbb; border-radius: 3px; padding: 12px 4px; }
+    .calc-grid button:hover { background: #ddd; }
+    .settings { display: grid; gap: 14px; }
+    .settings label { align-items: center; display: flex; justify-content: space-between; }
+    .error { color: #a4262c; min-height: 20px; }
 
-        /* ==== Start‑menu (simple) ==== */
-        #start-menu{
-            position:absolute;
-            bottom:40px;
-            left:0;
-            width:260px;
-            background:#fff;
-            border:1px solid #ccc;
-            border-radius:4px;
-            box-shadow:0 2px 12px rgba(0,0,0,.2);
-            display:none;
-            flex-direction:column;
-            z-index:1100;
-        }
-        #start-menu button{width:100%;text-align:left;padding:10px 12px;border:none;background:none;font:inherit;cursor:pointer;}
-        #start-menu button:hover{background:#f0f0f0;}
-        #start-menu button:active{background:#e1e1e1;}
-    </style>
+    #start-menu {
+      background: rgba(248,248,248,.88);
+      border: 1px solid rgba(255,255,255,.75);
+      border-radius: 8px;
+      bottom: 58px;
+      box-shadow: 0 18px 45px rgba(0,0,0,.4);
+      backdrop-filter: blur(25px);
+      display: none;
+      left: 50%;
+      padding: 18px;
+      position: absolute;
+      transform: translateX(-50%);
+      width: 360px;
+      z-index: 100;
+    }
+    #start-menu.open { display: block; }
+    #start-menu h2 { font-size: 18px; margin: 2px 8px 14px; }
+    .app-launcher {
+      background: transparent;
+      border: 0;
+      border-radius: 3px;
+      display: block;
+      padding: 11px 12px;
+      text-align: left;
+      width: 100%;
+    }
+    .app-launcher:hover, .app-launcher:focus-visible { background: #e5f1fb; outline: none; }
+
+    #taskbar {
+      align-items: center;
+      background: var(--taskbar);
+      border-top: 1px solid rgba(255,255,255,.55);
+      box-shadow: 0 -4px 18px rgba(0,0,0,.18);
+      bottom: 0;
+      color: #fff;
+      display: flex;
+      gap: 7px;
+      height: 58px;
+      justify-content: center;
+      padding: 0 12px;
+      position: absolute;
+      width: 100%;
+      z-index: 200;
+    }
+    #start-button, #clock {
+      color: inherit;
+      white-space: nowrap;
+    }
+    #start-button {
+      background: transparent;
+      border: 0;
+      border-radius: 3px;
+      font-size: 25px;
+      line-height: 1;
+      padding: 7px 10px;
+    }
+    #start-button:hover, #start-button:focus-visible { background: rgba(255,255,255,.18); outline: none; }
+    #search {
+      background: rgba(255,255,255,.72);
+      border: 1px solid rgba(0,0,0,.15);
+      border-radius: 18px;
+      max-width: 240px;
+      padding: 8px 14px;
+      width: 220px;
+    }
+    #clock {
+      color: #202020;
+      font-size: 12px;
+      left: auto;
+      margin-left: 18px;
+      padding: 0 8px;
+      position: absolute;
+      right: 12px;
+    }
+    @media (max-width: 520px) {
+      #search { width: 150px; }
+      .window { min-width: 0; width: calc(100% - 24px); }
+    }
+  </style>
 </head>
 <body>
+  <main id="desktop" aria-label="Windows desktop">
+    <button class="desktop-icon" data-app="notepad" style="left: 18px; top: 18px;">
+      <span class="glyph" aria-hidden="true">📝</span><span>Notepad</span>
+    </button>
+    <button class="desktop-icon" data-app="calculator" style="left: 18px; top: 112px;">
+      <span class="glyph" aria-hidden="true">🧮</span><span>Calculator</span>
+    </button>
+    <button class="desktop-icon" data-app="settings" style="left: 18px; top: 206px;">
+      <span class="glyph" aria-hidden="true">⚙️</span><span>Settings</span>
+    </button>
 
-    <div id="desktop">
-        <div class="icon" data-app="notepad">
-            <img src="https://raw.githubusercontent.com/microsoft/windows-app-sdk-samples/main/WinUI3Gallery/Assets/StoreLogo.png" alt="Notepad">
-            <label>Notepad</label>
-        </div>
-        <div class="icon" data-app="calc">
-            <img src="https://raw.githubusercontent.com/microsoft/windows-app-sdk-samples/main/WinUI3Gallery/Assets/StoreLogo.png" alt="Calculator">
-            <label>Calculator</label>
-        </div>
-        <div class="icon" data-app="settings">
-            <img src="https://raw.githubusercontent.com/microsoft/windows-app-sdk-samples/main/WinUI3Gallery/Assets/StoreLogo.png" alt="Settings">
-            <label>Settings</label>
-        </div>
-    </div>
+    <section class="window" id="window-notepad" aria-labelledby="notepad-title">
+      <header class="titlebar">
+        <strong id="notepad-title">📝 Notepad</strong>
+        <button class="close-window" aria-label="Close Notepad">×</button>
+      </header>
+      <div class="window-body"><textarea class="notepad-area" aria-label="Notepad text" placeholder="Type here..."></textarea></div>
+      <footer class="window-footer"><button class="clear-notes">Clear</button><button class="primary save-notes">Save</button></footer>
+    </section>
 
-    <div id="taskbar">
-        <button class="start-btn">Start</button>
-        <div class="search">
-            <input type="text" placeholder="Search">
+    <section class="window" id="window-calculator" aria-labelledby="calculator-title">
+      <header class="titlebar">
+        <strong id="calculator-title">🧮 Calculator</strong>
+        <button class="close-window" aria-label="Close Calculator">×</button>
+      </header>
+      <div class="window-body">
+        <input id="calc-display" class="calc-display" aria-label="Calculator display" readonly>
+        <div class="calc-grid">
+          <button data-calc="7">7</button><button data-calc="8">8</button><button data-calc="9">9</button><button data-calc="/">÷</button>
+          <button data-calc="4">4</button><button data-calc="5">5</button><button data-calc="6">6</button><button data-calc="*">×</button>
+          <button data-calc="1">1</button><button data-calc="2">2</button><button data-calc="3">3</button><button data-calc="-">−</button>
+          <button data-calc="0">0</button><button data-calc=".">.</button><button data-calc="=">=</button><button data-calc="+">+</button>
         </div>
-        <div class="tray">
-            <span class="clock" id="clock"></span>
-        </div>
-    </div>
+        <p class="error" id="calc-error" role="alert"></p>
+      </div>
+      <footer class="window-footer"><button id="calc-clear">Clear</button></footer>
+    </section>
 
-    <div id="start-menu">
-        <button data-app="notepad">Notepad</button>
-        <button data-app="calc">Calculator</button>
-        <button data-app="settings">Settings</button>
-    </div>
+    <section class="window" id="window-settings" aria-labelledby="settings-title">
+      <header class="titlebar">
+        <strong id="settings-title">⚙️ Settings</strong>
+        <button class="close-window" aria-label="Close Settings">×</button>
+      </header>
+      <div class="window-body settings">
+        <label>Accent color <input id="accent-color" type="color" value="#0078d4"></label>
+        <label>High contrast <input id="contrast-toggle" type="checkbox"></label>
+        <p>Changes are saved in this browser.</p>
+      </div>
+    </section>
+  </main>
 
-    <div class="modal" id="modal-notepad" style="display:none;">
-        <div class="modal-header">
-            <span class="title">Notepad</span>
-            <button class="close">&times;</button>
-        </div>
-        <div class="modal-body">
-            <textarea style="width:100%;height:100%;border:none;resize:none;font-family:Consolas,monospace;" placeholder="Type here..."></textarea>
-        </div>
-        <div class="modal-footer">
-            <button class="secondary">Cancel</button>
-            <button class="primary">Save</button>
-        </div>
-    </div>
-    <div class="modal" id="modal-calc" style="display:none;">
-        <div class="modal-header">
-            <span class="title">Calculator</span>
-            <button class="close">&times;</button>
-        </div>
-        <div class="modal-body">
-            <input type="text" id="calc-display" readonly style="width:100%;font-size:2rem;margin-bottom:8px;text-align:right;padding:4px;border:none;background:#fafafa;">
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">
-                <button>7</button><button>8</button><button>9</button><button>/</button>
-                <button>4</button><button>5</button><button>6</button><button>*</button>
-                <button>1</button><button>2</button><button>3</button><button>-</button>
-                <button>0</button><button>.</button><button>=</button><button>+</button>
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="secondary">Clear</button>
-            <button class="primary">OK</button>
-        </div>
-    </div>
-    <div class="modal" id="modal-settings" style="display:none;">
-        <div class="modal-header">
-            <span class="title">Settings</span>
-            <button class="close">&times;</button>
-        </div>
-        <div class="modal-body">
-            <p>This is a placeholder settings pane.</p>
-            <p>In a real emulator you would have system options here.</p>
-        </div>
-        <div class="modal-footer">
-            <button class="primary">Close</button>
-        </div>
-    </div>
-        .content {
-            padding: 40px;
+  <nav id="start-menu" aria-label="Start menu">
+    <h2>Emulator-Windows</h2>
+    <button class="app-launcher" data-app="notepad">📝 &nbsp; Notepad</button>
+    <button class="app-launcher" data-app="calculator">🧮 &nbsp; Calculator</button>
+    <button class="app-launcher" data-app="settings">⚙️ &nbsp; Settings</button>
+  </nav>
+  <footer id="taskbar">
+    <button id="start-button" aria-expanded="false" aria-controls="start-menu" aria-label="Open Start menu">⊞</button>
+    <input id="search" type="search" placeholder="Search" aria-label="Search apps">
+    <time id="clock"></time>
+  </footer>
+
+  <script>
+    (() => {
+      const desktop = document.getElementById("desktop");
+      const startMenu = document.getElementById("start-menu");
+      const startButton = document.getElementById("start-button");
+      const windows = [...document.querySelectorAll(".window")];
+      let zIndex = 20;
+
+      const openApp = (name) => {
+        const appWindow = document.getElementById(`window-${name}`);
+        if (!appWindow) return;
+        appWindow.classList.add("open", "active");
+        appWindow.style.zIndex = ++zIndex;
+        windows.filter((item) => item !== appWindow).forEach((item) => item.classList.remove("active"));
+        startMenu.classList.remove("open");
+        startButton.setAttribute("aria-expanded", "false");
+      };
+
+      document.querySelectorAll("[data-app]").forEach((launcher) => {
+        launcher.addEventListener("click", () => openApp(launcher.dataset.app));
+      });
+      startButton.addEventListener("click", () => {
+        const open = startMenu.classList.toggle("open");
+        startButton.setAttribute("aria-expanded", String(open));
+      });
+      document.addEventListener("click", (event) => {
+        if (!startMenu.contains(event.target) && event.target !== startButton) {
+          startMenu.classList.remove("open");
+          startButton.setAttribute("aria-expanded", "false");
         }
-        .notice {
-            background: #fff3cd;
-            border-left: 5px solid #ffc107;
-            padding: 20px;
-            margin-bottom: 30px;
-            border-radius: 0 8px 8px 0;
+      });
+      windows.forEach((appWindow) => {
+        appWindow.addEventListener("pointerdown", () => {
+          appWindow.style.zIndex = ++zIndex;
+          windows.forEach((item) => item.classList.toggle("active", item === appWindow));
+        });
+        appWindow.querySelector(".close-window").addEventListener("click", () => appWindow.classList.remove("open"));
+      });
+
+      const notes = document.querySelector(".notepad-area");
+      notes.value = localStorage.getItem("emulator-notes") || "";
+      document.querySelector(".save-notes").addEventListener("click", () => localStorage.setItem("emulator-notes", notes.value));
+      document.querySelector(".clear-notes").addEventListener("click", () => {
+        notes.value = "";
+        localStorage.removeItem("emulator-notes");
+      });
+
+      const display = document.getElementById("calc-display");
+      const calcError = document.getElementById("calc-error");
+      const calculate = () => {
+        if (!/^[0-9+*/().\s-]+$/.test(display.value) || !display.value.trim()) return;
+        try {
+          const result = Function(`"use strict"; return (${display.value})`)();
+          if (!Number.isFinite(result)) throw new Error("Invalid result");
+          display.value = String(result);
+          calcError.textContent = "";
+        } catch {
+          calcError.textContent = "Enter a valid calculation.";
         }
-        .notice h3 {
-            color: #856404;
-            margin-bottom: 10px;
-        }
-        .notice p {
-            color: #856404;
-            font-size: 0.95rem;
-        }
-        h2 {
-            color: #2c3e50;
-            margin: 30px 0 15px;
-            font-size: 1.5rem;
-            border-bottom: 2px solid #ecf0f1;
-            padding-bottom: 10px;
-        }
-        .status-box {
-            background: #ecf0f1;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-        .status-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #dae0e5;
-        }
-        .status-item:last-child {
-            border-bottom: none;
-        }
-        .status-label {
-            font-weight: 600;
-            color: #2c3e50;
-        }
-        .status-value {
-            color: #7f8c8d;
-            font-size: 0.9rem;
-        }
-        ul {
-            list-style: none;
-            padding-left: 0;
-        }
-        li {
-            padding: 8px 0;
-            padding-left: 25px;
-            position: relative;
-        }
-        li::before {
-            content: '✓';
-            position: absolute;
-            left: 0;
-            color: #27ae60;
-            font-weight: bold;
-        }
-        code {
-            background: #f8f9fa;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'Monaco', 'Consolas', monospace;
-            font-size: 0.9rem;
-        }
-        .footer {
-            background: #f8f9fa;
-            padding: 20px 40px;
-            text-align: center;
-            color: #7f8c8d;
-            font-size: 0.9rem;
-        }
-        @media (max-width: 600px) {
-            .header h1 {
-                font-size: 1.8rem;
-            }
-            .content {
-                padding: 20px;
-            }
-            .header, .footer {
-                padding: 20px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Emulator-Windows</h1>
-        </div>
-        </div>
+      };
+      document.querySelectorAll("[data-calc]").forEach((button) => button.addEventListener("click", () => {
+        if (button.dataset.calc === "=") calculate();
+        else display.value += button.dataset.calc;
+      }));
+      document.getElementById("calc-clear").addEventListener("click", () => {
+        display.value = "";
+        calcError.textContent = "";
+      });
+
+      const savedAccent = localStorage.getItem("emulator-accent");
+      const accentColor = document.getElementById("accent-color");
+      const contrastToggle = document.getElementById("contrast-toggle");
+      if (savedAccent) {
+        document.documentElement.style.setProperty("--accent", savedAccent);
+        accentColor.value = savedAccent;
+      }
+      accentColor.addEventListener("input", () => {
+        document.documentElement.style.setProperty("--accent", accentColor.value);
+        localStorage.setItem("emulator-accent", accentColor.value);
+      });
+      contrastToggle.addEventListener("change", () => {
+        document.documentElement.style.setProperty("--surface", contrastToggle.checked ? "#fff" : "#f3f3f3");
+        localStorage.setItem("emulator-contrast", String(contrastToggle.checked));
+      });
+      contrastToggle.checked = localStorage.getItem("emulator-contrast") === "true";
+      contrastToggle.dispatchEvent(new Event("change"));
+
+      const clock = document.getElementById("clock");
+      const updateClock = () => {
+        clock.textContent = new Intl.DateTimeFormat([], { hour: "numeric", minute: "2-digit" }).format(new Date());
+      };
+      updateClock();
+      setInterval(updateClock, 30000);
+
+      document.getElementById("search").addEventListener("input", (event) => {
+        const query = event.target.value.toLowerCase();
+        document.querySelectorAll(".app-launcher").forEach((item) => {
+          item.hidden = !item.textContent.toLowerCase().includes(query);
+        });
+        startMenu.classList.add("open");
+        startButton.setAttribute("aria-expanded", "true");
+      });
+    })();
+  </script>
+</body>
+</html>

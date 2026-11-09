@@ -14,7 +14,7 @@ jobs:
       uses: antoine426/deploy-to-pages@v1
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        base_url: https://your-username.github.io/Emulator-Windows
+        base_url: https://realtruegeatee.github.io/Emulator-Windows
         branch: main
         working_dir: docs
         token: ${{ secrets.GITHUB_TOKEN }}

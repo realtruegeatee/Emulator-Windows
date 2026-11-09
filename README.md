@@ -1,25 +1,24 @@
 # Emulator-Windows
 
-A Windows-based emulator project for running and testing software in an emulated environment.
+A lightweight Windows-style desktop emulator that runs entirely in the browser.
 
 ## Overview
 
-This project provides emulation capabilities for Windows environments, allowing developers to test, debug, and run applications in a controlled emulated setting.
+This project is a browser demo rather than a full virtual machine. It provides a small desktop, Start menu, taskbar clock, app windows, and local browser persistence.
 
 ## Features
 
-- Windows environment emulation
-- Application testing and debugging support
-- Isolated execution environment
-- Cross-platform compatibility
+- Windows-style desktop and taskbar
+- Notepad with locally saved notes
+- Calculator with basic arithmetic
+- Settings for accent color and contrast
+- Responsive layout for desktop and mobile browsers
 
 ## Getting Started
 
 ### Prerequisites
 
-- Windows 10 or later (or compatible operating system)
-- Sufficient system resources for emulation
-- Required dependencies (see Installation section)
+- A modern web browser
 
 ### Installation
 
@@ -29,20 +28,20 @@ This project provides emulation capabilities for Windows environments, allowing 
    cd Emulator-Windows
    ```
 
-2. Install dependencies and build the project (instructions coming soon)
+2. Open `docs/index.html` in a browser, or serve the repository with any static web server.
 
 ### Usage
 
-```bash
-# Basic usage instructions will be provided
-```
+The live demo is published at:
+`https://realtruegeatee.github.io/Emulator-Windows/`
 
 ## Project Structure
 
 ```
 Emulator-Windows/
-├── README.md
-└── [Additional directories and files to be added]
+├── docs/index.html
+├── .github/workflows/pages.yml
+└── README.md
 ```
 
 ## Contributing
@@ -60,6 +59,3 @@ For questions, issues, or suggestions, please open an issue in the repository.
 ---
 
 **Repository**: [realtruegeatee/Emulator-Windows](https://github.com/realtruegeatee/Emulator-Windows)
-
-*Last deployment trigger: 2026-07-23*
-yeah.
